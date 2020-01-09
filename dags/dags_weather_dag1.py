@@ -11,7 +11,7 @@ default_args = {
 }
 
 dag = DAG(
-    'airflow_monitoring',
+    'airflow_monitoring2',
     default_args=default_args,
     description='liveness monitoring dag',
     schedule_interval=None,
