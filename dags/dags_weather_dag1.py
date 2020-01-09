@@ -1,28 +1,26 @@
-import datetime
-from datetime import timedelta
+"""A liveness prober dag for monitoring composer.googleapis.com/environment/healthy."""
 import airflow
 from airflow import DAG
-from airflow.operators import python_operator
+from airflow.operators.bash_operator import BashOperator
+from datetime import timedelta
 
-
-default_dag_args = {
-    'start_date': airflow.utils.dates.days_ago(0)
+default_args = {
+    'start_date': airflow.utils.dates.days_ago(0),
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5)
 }
 
-with airflow.DAG(
-        'weather_dag2',
-        schedule_interval=datetime.timedelta(minutes=15),
-        default_args=default_dag_args) as dag:
-    def pipeline():
-        import requests
+dag = DAG(
+    'airflow_monitoring',
+    default_args=default_args,
+    description='liveness monitoring dag',
+    schedule_interval=None,
+    dagrun_timeout=timedelta(minutes=60))
 
-	#2 hours from current time is the limit imposed by Weather HOD API
-	end_time = datetime.datetime.now() - timedelta(hours=2)
-	start_time = end_time - timedelta(minutes=15)
-        url = 'https://us-central1-moovestage.cloudfunctions.net/function6'
-        requests.post(url, data={'start_time': start_time.strftime('%Y%m%d%H%M'), 'end_time': end_time.strftime('%Y%m%d%H%M')})
-
-
-    task = python_operator.PythonOperator(
-	task_id='weather_pipeline',
-	python_callable=pipeline)
+# priority_weight has type int in Airflow DB, uses the maximum.
+t1 = BashOperator(
+    task_id='echo',
+    bash_command='echo test',
+    dag=dag,
+    depends_on_past=False,
+    priority_weight=2**31-1)
